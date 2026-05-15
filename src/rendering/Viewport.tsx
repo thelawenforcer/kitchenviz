@@ -21,6 +21,7 @@ export function Viewport() {
   const items = useScene((s) => s.scene.items);
   const lighting = useScene((s) => s.scene.lighting);
   const camera = useScene((s) => s.scene.camera);
+  const select = useScene((s) => s.select);
 
   const [az, el] = lighting.sunAngle;
   const sunR = 12;
@@ -46,6 +47,7 @@ export function Viewport() {
         toneMappingExposure: 1.0,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
+      onPointerMissed={() => select(null)}
     >
       <color attach="background" args={["#101013"]} />
 
@@ -71,15 +73,20 @@ export function Viewport() {
 
       <ambientLight intensity={lighting.ambientIntensity} />
 
-      {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[40, 40]} />
         <meshStandardMaterial color="#2c2c30" roughness={0.85} metalness={0.0} />
       </mesh>
 
-      {/* Placed items */}
       {items.map((item) => (
-        <ItemRenderer key={item.id} item={item} />
+        <ItemRenderer
+          key={item.id}
+          item={item}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            select(item.id);
+          }}
+        />
       ))}
 
       <ContactShadows
