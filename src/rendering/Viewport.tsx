@@ -72,7 +72,7 @@ export function Viewport() {
         castShadow
         shadow-mapSize={[shadowMap, shadowMap]}
         shadow-bias={-0.0002}
-        shadow-normal-bias={0.04}
+        shadow-normalBias={0.04}
       >
         <orthographicCamera
           attach="shadow-camera"
