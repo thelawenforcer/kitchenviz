@@ -47,6 +47,8 @@ export type ItemKind =
   | "dishwasher"
   | "wall"
   | "window_unit"
+  | "floor_patch"
+  | "ceiling_patch"
   | "pendant_light"
   | "spot_light"
   | "under_cabinet_strip";
