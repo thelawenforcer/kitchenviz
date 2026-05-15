@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { useScene } from "@/scene/store";
 import { downloadScene, readSceneFromFile } from "@/scene/serialize";
 import { useRenderTrigger } from "./renderMode";
@@ -11,6 +11,9 @@ export function TopBar() {
   const loadScene = useScene((s) => s.loadScene);
   const resetScene = useScene((s) => s.resetScene);
   const triggerRender = useRenderTrigger();
+  const snapEnabled = useScene((s) => s.snapEnabled);
+  const toggleSnap = useScene((s) => s.toggleSnap);
+  const { canUndo, canRedo } = useTemporalCounts();
 
   const handleSave = () => downloadScene(scene, filename);
   const handleSaveAs = () => {
@@ -59,6 +62,32 @@ export function TopBar() {
         />
       </div>
 
+      <div className="ml-2 flex items-center gap-1">
+        <Btn
+          onClick={() => useScene.temporal.getState().undo()}
+          disabled={!canUndo}
+          title="Undo (⌘Z)"
+        >
+          ↶ Undo
+        </Btn>
+        <Btn
+          onClick={() => useScene.temporal.getState().redo()}
+          disabled={!canRedo}
+          title="Redo (⇧⌘Z)"
+        >
+          ↷ Redo
+        </Btn>
+      </div>
+
+      <button
+        type="button"
+        onClick={toggleSnap}
+        className={`ml-2 px-2 py-1 text-[11px] rounded border ${snapEnabled ? "bg-accent/20 border-accent/60 text-white" : "bg-panelMuted border-line text-neutral-400"}`}
+        title="Toggle snap (S)"
+      >
+        Snap {snapEnabled ? "10mm" : "off"}
+      </button>
+
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -93,10 +122,14 @@ function Btn({
   children,
   onClick,
   variant = "default",
+  disabled = false,
+  title,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   variant?: "default" | "primary";
+  disabled?: boolean;
+  title?: string;
 }) {
   const base = "px-2.5 py-1 text-xs rounded border transition-colors";
   const styles =
@@ -104,8 +137,31 @@ function Btn({
       ? "bg-accent/20 border-accent/60 text-white hover:bg-accent/40"
       : "bg-panelMuted border-line text-neutral-200 hover:bg-line";
   return (
-    <button type="button" onClick={onClick} className={`${base} ${styles}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`${base} ${styles} disabled:opacity-40 disabled:cursor-not-allowed`}
+    >
       {children}
     </button>
   );
+}
+
+/** zundo's temporal store sits outside React; subscribe to it via
+ * useSyncExternalStore so the undo/redo button enablement reacts.
+ * Two separate scalar subscriptions keep the snapshot reference
+ * stable. */
+function useTemporalCounts() {
+  const subscribe = (cb: () => void) => useScene.temporal.subscribe(cb);
+  const canUndo = useSyncExternalStore(
+    subscribe,
+    () => useScene.temporal.getState().pastStates.length > 0,
+  );
+  const canRedo = useSyncExternalStore(
+    subscribe,
+    () => useScene.temporal.getState().futureStates.length > 0,
+  );
+  return { canUndo, canRedo };
 }
