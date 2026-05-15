@@ -13,13 +13,33 @@ import {
 } from "@react-three/postprocessing";
 import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
+import { useScene } from "@/scene/store";
+import { mmToM } from "@/types";
+import { ItemRenderer } from "./ItemRenderer";
 
 export function Viewport() {
+  const items = useScene((s) => s.scene.items);
+  const lighting = useScene((s) => s.scene.lighting);
+  const camera = useScene((s) => s.scene.camera);
+
+  const [az, el] = lighting.sunAngle;
+  const sunR = 12;
+  const sunPos: [number, number, number] = [
+    Math.cos(el) * Math.sin(az) * sunR,
+    Math.sin(el) * sunR,
+    Math.cos(el) * Math.cos(az) * sunR,
+  ];
+
   return (
     <Canvas
       shadows
       dpr={[1, 2]}
-      camera={{ position: [4, 3, 5], fov: 45, near: 0.05, far: 200 }}
+      camera={{
+        position: [mmToM(camera.position[0]), mmToM(camera.position[1]), mmToM(camera.position[2])],
+        fov: 45,
+        near: 0.05,
+        far: 200,
+      }}
       gl={{
         antialias: true,
         toneMapping: THREE.ACESFilmicToneMapping,
@@ -29,13 +49,15 @@ export function Viewport() {
     >
       <color attach="background" args={["#101013"]} />
 
-      {/* IBL — biggest realism win, drives reflections on worktops/taps */}
-      <Environment preset="apartment" background={false} />
+      <Environment
+        preset={lighting.environmentPreset}
+        environmentIntensity={lighting.environmentIntensity}
+        background={false}
+      />
 
-      {/* Sun */}
       <directionalLight
-        position={[6, 9, 4]}
-        intensity={2.4}
+        position={sunPos}
+        intensity={lighting.sunIntensity}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0002}
@@ -43,18 +65,11 @@ export function Viewport() {
       >
         <orthographicCamera
           attach="shadow-camera"
-          args={[-8, 8, 8, -8, 0.1, 30]}
+          args={[-8, 8, 8, -8, 0.1, 40]}
         />
       </directionalLight>
 
-      {/* Fill */}
-      <ambientLight intensity={0.15} />
-
-      {/* Placeholder content — replaced in later milestones */}
-      <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#c8ccd1" roughness={0.4} metalness={0.05} />
-      </mesh>
+      <ambientLight intensity={lighting.ambientIntensity} />
 
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -62,17 +77,20 @@ export function Viewport() {
         <meshStandardMaterial color="#2c2c30" roughness={0.85} metalness={0.0} />
       </mesh>
 
-      {/* Soft ground contact shadow */}
+      {/* Placed items */}
+      {items.map((item) => (
+        <ItemRenderer key={item.id} item={item} />
+      ))}
+
       <ContactShadows
         position={[0, 0.001, 0]}
-        opacity={0.55}
+        opacity={0.5}
         scale={20}
         blur={2.5}
         far={6}
         resolution={1024}
       />
 
-      {/* Reference grid — fades with distance */}
       <Grid
         args={[40, 40]}
         cellSize={0.1}
@@ -89,9 +107,9 @@ export function Viewport() {
 
       <OrbitControls
         makeDefault
-        target={[0, 0.6, 0]}
+        target={[mmToM(camera.target[0]), mmToM(camera.target[1]), mmToM(camera.target[2])]}
         maxPolarAngle={Math.PI / 2 - 0.02}
-        minDistance={1}
+        minDistance={0.5}
         maxDistance={30}
       />
 

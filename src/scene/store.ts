@@ -77,7 +77,14 @@ export const DEFAULT_CAMERA: CameraState = {
 export const seedScene = (): Scene => ({
   version: 1,
   room: { ...DEFAULT_ROOM },
-  items: [],
+  items: [
+    {
+      id: "demo-base-cabinet",
+      sku: "BC-600-2D",
+      position: [0, 0, 0],
+      rotationY: 0,
+    },
+  ],
   lighting: { ...DEFAULT_LIGHTING },
   camera: {
     position: [...DEFAULT_CAMERA.position] as Vec3,
