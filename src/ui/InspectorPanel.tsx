@@ -92,7 +92,10 @@ function ItemInspector({ item }: { item: PlacedItem }) {
 
       {/* Position + rotation */}
       <section className="space-y-3">
-        <h3 className="text-[11px] uppercase tracking-wider text-neutral-500">Transform</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-[11px] uppercase tracking-wider text-neutral-500">Transform</h3>
+          <GizmoModeToggle />
+        </div>
         <div className="grid grid-cols-3 gap-2">
           {(["x", "y", "z"] as const).map((axis, i) => (
             <NumberField
@@ -154,6 +157,27 @@ function ItemInspector({ item }: { item: PlacedItem }) {
       >
         Delete item
       </button>
+    </div>
+  );
+}
+
+function GizmoModeToggle() {
+  const mode = useScene((s) => s.transformMode);
+  const setMode = useScene((s) => s.setTransformMode);
+  return (
+    <div className="flex rounded border border-line overflow-hidden text-[10px]">
+      {(["translate", "rotate"] as const).map((m) => (
+        <button
+          key={m}
+          type="button"
+          onClick={() => setMode(m)}
+          className={`px-2 py-0.5 capitalize ${
+            mode === m ? "bg-accent/40 text-white" : "bg-panelMuted text-neutral-400 hover:text-neutral-200"
+          }`}
+        >
+          {m === "translate" ? "move" : "rot"}
+        </button>
+      ))}
     </div>
   );
 }

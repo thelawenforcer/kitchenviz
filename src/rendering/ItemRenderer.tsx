@@ -1,6 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
+import type { Group } from "three";
+import { Outlines } from "@react-three/drei";
 import { getCatalogEntry } from "@/catalog/entries";
+import { useItemRefs } from "@/scene/itemRefs";
+import { useScene } from "@/scene/store";
 import { mmToM } from "@/types";
 import type { Dimensions, ItemKind, MaterialId, PlacedItem } from "@/types";
 import { BaseCabinet } from "./primitives/BaseCabinet";
@@ -35,6 +39,16 @@ interface Resolved {
 
 export function ItemRenderer({ item, onPointerDown }: Props) {
   const entry = getCatalogEntry(item.sku);
+  const groupRef = useRef<Group>(null);
+  const register = useItemRefs((s) => s.register);
+  const unregister = useItemRefs((s) => s.unregister);
+  const isSelected = useScene((s) => s.selectedId === item.id);
+
+  useEffect(() => {
+    if (groupRef.current) register(item.id, groupRef.current);
+    return () => unregister(item.id);
+  }, [item.id, register, unregister]);
+
   const resolved = useMemo<Resolved | null>(() => {
     if (!entry) return null;
     return {
@@ -54,12 +68,16 @@ export function ItemRenderer({ item, onPointerDown }: Props) {
 
   return (
     <group
+      ref={groupRef}
       position={[mmToM(item.position[0]), mmToM(item.position[1]), mmToM(item.position[2])]}
       rotation={[0, item.rotationY, 0]}
       userData={{ itemId: item.id }}
       onPointerDown={onPointerDown}
     >
       {renderKind(resolved)}
+      {isSelected && (
+        <Outlines thickness={3} color="#7aa2ff" screenspace transparent opacity={0.9} />
+      )}
     </group>
   );
 }

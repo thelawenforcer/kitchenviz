@@ -16,6 +16,7 @@ import * as THREE from "three";
 import { useScene } from "@/scene/store";
 import { mmToM } from "@/types";
 import { ItemRenderer } from "./ItemRenderer";
+import { Selection } from "./Selection";
 
 export function Viewport() {
   const items = useScene((s) => s.scene.items);
@@ -88,6 +89,8 @@ export function Viewport() {
           }}
         />
       ))}
+
+      <Selection />
 
       <ContactShadows
         position={[0, 0.001, 0]}
